@@ -1,56 +1,50 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: Vite Build and Deploy
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: ['main']
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow one concurrent deployment
-concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+    branches:
+      - main  # Trigger action on push to the main branch
+  pull_request:
+    branches:
+      - main  # Trigger action on pull requests to the main branch
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      # Step 1: Check out the repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-      - name: Set up Node
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
-          cache: 'pnpm'
-          cache-dependency-path: ./pnpm-lock.yaml
+          node-version: '16'  # You can change this to the version you're using
+
+      # Step 3: Install dependencies
       - name: Install dependencies
-        run: pnpm install
-      - name: Build
-        run: pnpm build
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          # Upload dist repository
-          path: './dist'
+        run: |
+          npm install
+
+      # Step 4: Build the project
+      - name: Build the Vite project
+        run: |
+          npm run build
+
+      # Step 5: Deploy (optional, depending on where you are deploying)
+      # Example: Deploy to GitHub Pages using "peaceiris/actions-gh-pages"
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1
+        if: success()  # Only deploy if build is successful
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist  # Directory where Vite output is located
+
+      # Optional: Additional step to upload artifacts if needed
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v2  # Use the non-deprecated version
+      #   with:
+      #     name: build-artifact
+      #     path: ./dist
