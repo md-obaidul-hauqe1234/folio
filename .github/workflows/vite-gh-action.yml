@@ -1,43 +1,56 @@
-name: 'Deploy GitHub Pages site'
-description: 'A GitHub Action to deploy an artifact as a GitHub Pages site'
-author: 'GitHub'
-runs:
-  using: 'node16'
-  main: 'dist/index.js'
-inputs:
-  emit_telemetry:
-    deprecationMessage: 'Use of this input causes the action to do nothing. You should remove this build step from your workflow.'
-    description: 'Should this action only emit build telemetry instead of deploying the build artifact?'
-    required: false
-    default: 'false'
-  conclusion:
-    deprecationMessage: 'Use of this input does nothing as it was part of the deprecated `emit_telemetry` flow. You should remove this parameter from your workflow.'
-    description: 'The status of the previous build.'
-    required: false
-  token:
-    description: 'GitHub token'
-    default: ${{ github.token }}
-    required: true
-  timeout:
-    description: 'Time in milliseconds after which to timeout and cancel the deployment (default: 10 minutes)'
-    required: false
-    default: '600000'
-  error_count:
-    description: 'Maximum number of status report errors before cancelling a deployment (default: 10)'
-    required: false
-    default: '10'
-  reporting_interval:
-    description: 'Time in milliseconds between two deployment status report (default: 5 seconds)'
-    required: false
-    default: '5000'
-  artifact_name:
-    description: 'Name of the artifact to deploy'
-    required: false
-    default: 'github-pages'
-  preview:
-    description: 'Is this attempting to deploy a pull request as a GitHub Pages preview site? (NOTE: This feature is only in alpha currently and is not available to the public!)'
-    required: false
-    default: 'false'
-outputs:
-  page_url:
-    description: 'URL to deployed GitHub Pages'
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ['main']
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: ./pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build
+        run: pnpm build
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          # Upload dist repository
+          path: './dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
